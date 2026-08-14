@@ -1,5 +1,10 @@
 import express from 'express';
+import userRoutes from './routes/userRoute.js';
 
 const app = express();
 
-export default app; 
+app.use(express.json());
+
+app.use('/api/auth', userRoutes);
+
+export default app;

@@ -1,6 +1,6 @@
 import app from "./src/app.js";
 import { PORT } from "./src/configs/constant.js";
-import { connectToMongoDB } from "./src/configs/database.js";
+import { connectToMongoDB } from "./src/configs/mongodb.js";
 
 await connectToMongoDB();
 
