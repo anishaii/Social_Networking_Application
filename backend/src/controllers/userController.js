@@ -94,7 +94,7 @@ export const getUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-  const { username, bio, profilePicture } = req.body;
+  const { username, bio } = req.body;
 
   try {
     const user = await User.findById(req.params.id);
@@ -121,11 +121,27 @@ export const updateUser = async (req, res) => {
     }
 
     if (bio !== undefined) user.bio = bio;
-    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+    if (req.file) user.profilePicture = req.file.filename;
 
     await user.save();
 
     return res.status(200).json(user);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  const { search } = req.query;
+
+  try {
+    const filter = search
+      ? { username: { $regex: search, $options: 'i' } }
+      : {};
+
+    const users = await User.find(filter);
+
+    return res.status(200).json(users);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

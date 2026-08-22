@@ -12,12 +12,13 @@ import { protect } from '../middleware/authorized_middleware.js';
 import { validate } from '../middleware/validate.js';
 import { postSchema } from '../validators/postValidator.js';
 import { commentSchema } from '../validators/commentValidator.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(getAllPosts)
-  .post(protect, validate(postSchema), createPost);
+  .post(protect, upload.single('image'), validate(postSchema), createPost);
 
 router.route('/:id')
   .get(getPostById)
