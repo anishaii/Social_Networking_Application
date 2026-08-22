@@ -78,3 +78,55 @@ export const loginUser = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
+
+export const getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json(user);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  const { username, bio, profilePicture } = req.body;
+
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (req.params.id !== req.userId) {
+      return res.status(403).json({ message: "Not authorized to update this profile" });
+    }
+
+    if (username) {
+      const usernameTaken = await User.findOne({
+        username,
+        _id: { $ne: req.userId },
+      });
+
+      if (usernameTaken) {
+        return res.status(409).json({ message: "Username already in use" });
+      }
+
+      user.username = username;
+    }
+
+    if (bio !== undefined) user.bio = bio;
+    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+
+    await user.save();
+
+    return res.status(200).json(user);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};

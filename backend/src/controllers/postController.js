@@ -85,3 +85,51 @@ export const deletePost = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
+
+export const toggleLike = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const alreadyLiked = post.likes.some(
+      (userId) => userId.toString() === req.userId
+    );
+
+    if (alreadyLiked) {
+      post.likes = post.likes.filter(
+        (userId) => userId.toString() !== req.userId
+      );
+    } else {
+      post.likes.push(req.userId);
+    }
+
+    await post.save();
+
+    return res.status(200).json(post);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const addComment = async (req, res) => {
+  const { text } = req.body;
+
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    post.comments.push({ text, author: req.userId });
+
+    await post.save();
+
+    return res.status(201).json(post);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
