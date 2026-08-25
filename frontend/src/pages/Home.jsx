@@ -121,7 +121,13 @@ const Home = () => {
       ) : posts.length === 0 ? (
         <p className="text-center text-gray-500">No posts yet. Be the first!</p>
       ) : (
-        posts.map((post) => <PostCard key={post._id} post={post} />)
+        posts.map((post) => (
+        <PostCard
+          key={post._id}
+          post={post}
+          onDeleted={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+        />
+      ))
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, MessageSquare } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/useAuth';
 
@@ -20,18 +20,25 @@ const timeAgo = (dateString) => {
   return 'just now';
 };
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, onDeleted }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const [likes, setLikes] = useState(post.likes);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [content, setContent] = useState(post.content);
+  const [saving, setSaving] = useState(false);
+
   const isLiked = user && likes.includes(user.id);
+  const isOwner = user && post.author._id === user.id;
 
   const handleLike = async (e) => {
-    e.preventDefault(); // stop the parent <Link> from navigating
+    e.preventDefault();
     const wasLiked = isLiked;
 
-    // optimistic update
     setLikes((prev) =>
       wasLiked ? prev.filter((id) => id !== user.id) : [...prev, user.id]
     );
@@ -39,49 +46,134 @@ const PostCard = ({ post }) => {
     try {
       await api.post(`/api/posts/${post._id}/like`);
     } catch (err) {
-      // revert on failure
       setLikes(post.likes);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this post?')) return;
+
+    try {
+      await api.delete(`/api/posts/${post._id}`);
+      if (onDeleted) onDeleted(post._id);
+    } catch (err) {
+      alert('Failed to delete post.');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) return;
+    setSaving(true);
+    try {
+      await api.put(`/api/posts/${post._id}`, { content: editContent });
+      setContent(editContent);
+      setIsEditing(false);
+    } catch (err) {
+      alert('Failed to update post.');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <div className="bg-white rounded-xl shadow mb-4">
-      <div className="flex items-center gap-3 p-4">
-        <Link to={`/profile/${post.author._id}`}>
-          {post.author.profilePicture ? (
-            <img
-              src={`${apiUrl}/uploads/${post.author.profilePicture}`}
-              alt={post.author.username}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-purple-300 flex items-center justify-center text-white font-medium">
-              {post.author.username?.[0]?.toUpperCase()}
-            </div>
-          )}
-        </Link>
-        <div>
-          <Link
-            to={`/profile/${post.author._id}`}
-            className="font-semibold text-gray-900 hover:underline"
-          >
-            {post.author.username}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <Link to={`/profile/${post.author._id}`}>
+            {post.author.profilePicture ? (
+              <img
+                src={`${apiUrl}/uploads/${post.author.profilePicture}`}
+                alt={post.author.username}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-purple-300 flex items-center justify-center text-white font-medium">
+                {post.author.username?.[0]?.toUpperCase()}
+              </div>
+            )}
           </Link>
-          <p className="text-xs text-gray-500">{timeAgo(post.createdAt)}</p>
+          <div>
+            <Link
+              to={`/profile/${post.author._id}`}
+              className="font-semibold text-gray-900 hover:underline"
+            >
+              {post.author.username}
+            </Link>
+            <p className="text-xs text-gray-500">{timeAgo(post.createdAt)}</p>
+          </div>
         </div>
+
+        {isOwner && (
+          <div className="relative">
+            <button onClick={() => setShowMenu((prev) => !prev)}>
+              <MoreHorizontal className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-1 w-32 bg-white border rounded-lg shadow z-10">
+                <button
+                  onClick={() => {
+                    setIsEditing(true);
+                    setShowMenu(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    handleDelete();
+                  }}
+                  className="block w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-50"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <Link to={`/posts/${post._id}`}>
-        <p className="px-4 pb-3 text-gray-800 whitespace-pre-wrap">{post.content}</p>
-
-        {post.image && (
-          <img
-            src={`${apiUrl}/uploads/${post.image}`}
-            alt="post"
-            className="w-full max-h-96 object-cover"
+      {isEditing ? (
+        <div className="px-4 pb-3">
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={3}
+            className="w-full border rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        )}
-      </Link>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleSaveEdit}
+              disabled={saving}
+              className="bg-blue-600 text-white text-sm px-3 py-1 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setEditContent(content);
+                setIsEditing(false);
+              }}
+              className="border text-sm px-3 py-1 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <Link to={`/posts/${post._id}`}>
+          <p className="px-4 pb-3 text-gray-800 whitespace-pre-wrap">{content}</p>
+
+          {post.image && (
+            <img
+              src={`${apiUrl}/uploads/${post.image}`}
+              alt="post"
+              className="w-full max-h-96 object-cover"
+            />
+          )}
+        </Link>
+      )}
 
       <div className="flex items-center gap-4 px-4 py-3 border-t text-gray-500 text-sm">
         <button
