@@ -3,6 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Home, LogOut } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import api from '../services/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -12,6 +22,7 @@ const Navbar = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const searchRef = useRef(null);
 
   const handleLogout = () => {
@@ -35,12 +46,11 @@ const Navbar = () => {
       } catch (err) {
         setResults([]);
       }
-    }, 300); // debounce: wait 300ms after typing stops before searching
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  // Close the dropdown when clicking outside of it
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -138,9 +148,29 @@ const Navbar = () => {
           </Link>
         )}
 
-        <button onClick={handleLogout}>
+        <button onClick={() => setShowLogoutDialog(true)}>
           <LogOut className="w-5 h-5 text-gray-600 hover:text-red-500" />
         </button>
+
+        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Log out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You'll need to log in again to access your account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Log out
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </nav>
   );

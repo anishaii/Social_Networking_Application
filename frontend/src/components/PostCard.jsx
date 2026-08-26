@@ -3,6 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/useAuth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const timeAgo = (dateString) => {
   const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -27,6 +37,7 @@ const PostCard = ({ post, onDeleted }) => {
 
   const [likes, setLikes] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [content, setContent] = useState(post.content);
@@ -51,8 +62,6 @@ const PostCard = ({ post, onDeleted }) => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this post?')) return;
-
     try {
       await api.delete(`/api/posts/${post._id}`);
       if (onDeleted) onDeleted(post._id);
@@ -122,7 +131,7 @@ const PostCard = ({ post, onDeleted }) => {
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    handleDelete();
+                    setShowDeleteDialog(true);
                   }}
                   className="block w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-50"
                 >
@@ -130,6 +139,27 @@ const PostCard = ({ post, onDeleted }) => {
                 </button>
               </div>
             )}
+
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently
+                    delete your post and remove it from the feed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>

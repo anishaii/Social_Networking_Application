@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { toast } from 'sonner';
 import { useAuth } from '../context/useAuth';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,11 +42,13 @@ const Register = () => {
       setServerError('');
       try {
         await register(values.username, values.email, values.password);
-        navigate('/');
+        toast.success('Account created successfully!');
+        navigate('/login');
       } catch (err) {
-        setServerError(
-          err.response?.data?.message || 'Something went wrong. Please try again.'
-        );
+        const message =
+          err.response?.data?.message || 'Something went wrong. Please try again.';
+        setServerError(message);
+        toast.error(message);
       }
     },
   });
